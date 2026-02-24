@@ -1,0 +1,81 @@
+Resumo do Projeto: Tradutor Multilíngue com Dashboard Pessoal de Vocabulário
+1. Objetivo
+Criar uma aplicação web para traduzir textos entre Português, Francês, Inglês e Italiano, focada em estudantes multilíngues. O diferencial é ajudar o usuário a aprender palavras novas e acompanhar seu progresso no aprendizado de idiomas.
+
+2. Funcionalidades Planejadas
+Traduzir texto digitado usando a API da OpenAI.
+Analisar e listar, em ordem decrescente, as palavras mais frequentes do texto antes da tradução.
+Permitir que o usuário marque palavras “aprendidas” (ou que não deseje mais traduzir).
+Salvar as palavras aprendidas no navegador (usando localStorage).
+Em futuras traduções, não traduzir (ou destacar como conhecidas) as palavras já aprendidas, focando no aprendizado de vocabulário novo.
+(Opcional) Reconhecer texto em imagens (prints de tela) através de OCR, tornando possível traduzir capturas de tela.
+
+3. Tecnologias Sugeridas
+Frontend: HTML, CSS, JavaScript
+API de tradução: OpenAI (GPT-4, GPT-3.5 etc., via sua API Key paga)
+Armazenamento local: localStorage do navegador
+(Opcional) OCR: Tesseract.js ou serviço similar, caso queira lidar também com imagens.
+
+4. Fluxo do Usuário
+O usuário cola ou digita um texto na interface.
+O sistema exibe a frequência das palavras do texto, em ordem decrescente.
+O usuário pode marcar as palavras que já conhece (adicionando à lista de vocabulário aprendido).
+O sistema traduz o texto, ignorando ou destacando aquelas palavras já aprendidas.
+Novas palavras podem ser marcadas como aprendidas, ajudando o usuário a acompanhar sua evolução nos idiomas.
+
+5. Pontos Importantes
+O projeto combina tradução, análise de frequência de palavras e gerenciamento de vocabulário pessoal.
+Pode ser todo feito no navegador, ficando fácil de usar e compartilhar.
+O histórico de vocabulário é armazenado localmente, garantindo privacidade e controle.
+Com o OCR, o projeto pode evoluir para traduzir também textos extraídos de imagens (prints de tela).
+
+6. Próximos Passos para o Desenvolvimento
+Escolher se começará por texto digitado (mais simples) e só depois adicionará OCR.
+Implementar a análise de frequência (JS).
+Integrar a tradução com a OpenAI API.
+Desenvolver o gerenciamento do vocabulário aprendido.
+Montar a interface do usuário (dashboard).
+Dicas de Organização
+Salve este resumo num arquivo (Word, Google Docs, ou .txt).
+No desenvolvimento, avance e ajuste a cada etapa, testando sempre.
+Quando for retomar o projeto, comece pela funcionalidade que julgar mais importante ou fácil de implementar no momento.
+Para dúvidas e dificuldades, traga sua pergunta aqui detalhada!
+Parabéns pelo projeto! Quando quiser continuar, basta trazer este resumo ou copiar suas dúvidas daqui!
+[Mensagem gerada por ChatGPT | OpenAI | Junho/2024]
+
+
+20/02/2026
+
+🚀 PRÓXIMO PASSO NATURAL (começa o projeto de verdade)
+
+Agora temos 3 caminhos possíveis. Recomendo fortemente o 1️⃣.
+
+1️⃣ Criar a rota de tradução (coração do projeto) ⭐
+
+backend recebe texto
+
+devolve texto traduzido (por enquanto, fake)
+
+depois ligamos com OpenAI
+
+2️⃣ Implementar a análise de frequência de palavras no frontend
+
+JavaScript puro
+
+já começa o aprendizado real
+
+3️⃣ Melhorar a interface visual (CSS)
+
+deixar bonito
+
+sem mexer na lógica
+
+👉 ESCOLHA AGORA
+
+Responda só com o número:
+
+1, 2 ou 3
+
+💡 Minha sugestão: 1, porque te dá a sensação de “aplicação real” imediatamente.
+
+Você está indo muito bem, de verdade 💪

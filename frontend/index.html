@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tradutor Educacional</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #3a5fe0;
+      --card: #141f33;
+      --accent: #22c55e;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --highlight: #fde68a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+      background: linear-gradient(120deg, var(--bg), #020617);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    h1 { font-size: 2.2rem; margin-bottom: 12px; letter-spacing: -0.02em; }
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.3);
+      margin-bottom: 20px;
+    }
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      resize: vertical;
+      background: #020617;
+      color: var(--text);
+      border: 1px solid #1f2933;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 1rem;
+      outline: none;
+    }
+    textarea:focus { border-color: var(--accent); }
+    button {
+      background: var(--accent);
+      color: #022c22;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(34,197,94,.25);
+    }
+    button.secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid #1f2933;
+      box-shadow: none;
+    }
+    .columns { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media (min-width: 900px) { .columns { grid-template-columns: 1fr 1fr; } }
+    .result { white-space: pre-wrap; line-height: 1.6; }
+    .learned-word {
+      background: var(--highlight);
+      color: #1f2937;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #1f2933;
+      margin-bottom: 8px;
+      background: #020617;
+    }
+    li small { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌍 Tradutor Educacional</h1>
+
+    <div class="card">
+      <div class="toolbar">
+        <input type="file" id="imageInput" accept="image/*" />
+        <button id="ocrBtn" class="secondary">📷 Extrair texto</button>
+        <button id="translateBtn">Traduzir</button>
+      </div>
+      <textarea id="inputText" placeholder="Cole um texto em inglês, francês ou italiano — ou use OCR..."></textarea>
+    </div>
+
+    <div class="columns">
+      <div class="card">
+        <h2>Resultado</h2>
+        <div id="result" class="result"></div>
+      </div>
+
+      <div class="card">
+        <h2>Palavras mais frequentes</h2>
+        <ul id="frequencyList"></ul>
+      </div>
+    </div>
+
+    
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
