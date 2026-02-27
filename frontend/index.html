@@ -5,121 +5,121 @@
   <title>Tradutor Educacional</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #3a5fe0;
-      --card: #141f33;
-      --accent: #22c55e;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --highlight: #fde68a;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
-      background: linear-gradient(120deg, var(--bg), #020617);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 24px;
-    }
-    .container { max-width: 1100px; margin: 0 auto; }
-    h1 { font-size: 2.2rem; margin-bottom: 12px; letter-spacing: -0.02em; }
-    .card {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.3);
-      margin-bottom: 20px;
-    }
-    .toolbar {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    textarea {
-      width: 100%;
-      min-height: 180px;
-      resize: vertical;
-      background: #020617;
-      color: var(--text);
-      border: 1px solid #1f2933;
-      border-radius: 12px;
-      padding: 14px;
-      font-size: 1rem;
-      outline: none;
-    }
-    textarea:focus { border-color: var(--accent); }
-    button {
-      background: var(--accent);
-      color: #022c22;
-      border: none;
-      border-radius: 10px;
-      padding: 10px 16px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 6px 18px rgba(34,197,94,.25);
-    }
-    button.secondary {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid #1f2933;
-      box-shadow: none;
-    }
-    .columns { display: grid; grid-template-columns: 1fr; gap: 20px; }
-    @media (min-width: 900px) { .columns { grid-template-columns: 1fr 1fr; } }
-    .result { white-space: pre-wrap; line-height: 1.6; }
-    .learned-word {
-      background: var(--highlight);
-      color: #1f2937;
-      padding: 2px 6px;
-      border-radius: 6px;
-      font-weight: 600;
-    }
-    ul { list-style: none; padding: 0; margin: 0; }
-    li {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #1f2933;
-      margin-bottom: 8px;
-      background: #020617;
-    }
-    li small { color: var(--muted); }
-  </style>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-    <h1>🌍 Tradutor Educacional</h1>
-
-    <div class="card">
-      <div class="toolbar">
-        <input type="file" id="imageInput" accept="image/*" />
-        <button id="ocrBtn" class="secondary">📷 Extrair texto</button>
-        <button id="translateBtn">Traduzir</button>
+    <header class="main-header">
+      <div class="header-content">
+        <h1 id="mainHeading">🌍 Tradutor Educacional</h1>
+        <p class="header-tagline">Traduza, aprenda palavras e acompanhe o seu progresso</p>
       </div>
-      <textarea id="inputText" placeholder="Cole um texto em inglês, francês ou italiano — ou use OCR..."></textarea>
+      <button type="button" id="themeToggle" class="theme-toggle secondary" aria-label="Alternar tema claro ou escuro" title="Alternar tema">
+        <span id="themeIcon" aria-hidden="true">🌙</span>
+      </button>
+    </header>
+
+    <div class="card card--main">
+      <div class="toolbar">
+        <div class="file-input-wrap">
+          <input type="file" id="imageInput" accept="image/*" aria-label="Arquivo de imagem" />
+          <label for="imageInput" class="file-input-label">Selecionar imagem</label>
+          <span id="imageInputStatus" class="file-input-status">Nenhum arquivo selecionado</span>
+        </div>
+        <button id="ocrBtn" class="secondary" type="button" aria-label="Extrair texto da imagem">📷 Extrair texto</button>
+        <button id="translateBtn" type="button" aria-label="Traduzir texto">Traduzir</button>
+        <button id="clearBtn" class="secondary" type="button" aria-label="Limpar campo e resultado">Limpar</button>
+        <div class="toolbar-right">
+          <span id="charCount" aria-live="polite">0 caracteres</span>
+          <span id="statusBadge" class="badge" role="status" aria-live="polite">
+            <span class="badge-dot" aria-hidden="true"></span>
+            <span id="statusText">Pronto</span>
+          </span>
+        </div>
+      </div>
+      <label class="visually-hidden" for="inputText">Texto a traduzir</label>
+      <textarea id="inputText" placeholder="Cole um texto em inglês, francês ou italiano — ou use arquivo de imagem..." aria-describedby="charCount"></textarea>
+      <div id="errorBox" class="error-box" style="display:none;" role="alert"></div>
     </div>
 
     <div class="columns">
-      <div class="card">
-        <h2>Resultado</h2>
-        <div id="result" class="result"></div>
+      <div class="card card--result">
+        <div class="card-header">
+          <h2 id="resultHeading">Resultado</h2>
+          <div class="tabs result-tabs" role="tablist" aria-label="Visualização do resultado">
+            <button id="tabTranslated" class="tab-button active" type="button" role="tab" aria-selected="true" aria-controls="translatedResult">Tradução</button>
+            <button id="tabOriginal" class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="originalResult">Original com aprendidas</button>
+            <button id="tabTranslatedLearned" class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="translatedLearnedResult">Tradução com aprendidas</button>
+            <button id="copyResultBtn" class="secondary small" type="button" aria-label="Copiar texto do resultado">Copiar</button>
+          </div>
+        </div>
+        <div id="translatedResult" class="result tab-content" role="tabpanel" aria-labelledby="tabTranslated"></div>
+        <div id="originalResult" class="result tab-content hidden" role="tabpanel" aria-labelledby="tabOriginal"></div>
+        <div id="translatedLearnedResult" class="result tab-content hidden" role="tabpanel" aria-labelledby="tabTranslatedLearned"></div>
       </div>
 
-      <div class="card">
-        <h2>Palavras mais frequentes</h2>
+      <div class="card card--freq">
+        <div class="card-header">
+          <h2>Palavras mais frequentes</h2>
+          <label class="toggle">
+            <input type="checkbox" id="hideLearnedToggle" />
+            <span>Ocultar aprendidas</span>
+          </label>
+        </div>
         <ul id="frequencyList"></ul>
       </div>
     </div>
 
-    
+    <div class="columns">
+      <div class="card card--history">
+        <div class="card-header clickable" id="historyHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="historyPanel">
+          <h2>Histórico de traduções</h2>
+          <span id="historyChevron" class="chevron">▼</span>
+        </div>
+        <div id="historyPanel" class="collapsible collapsed">
+          <ul id="historyList"></ul>
+        </div>
+      </div>
+
+      <div class="card card--learned">
+        <div class="card-header clickable" id="learnedHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="learnedPanel">
+          <h2>Palavras aprendidas</h2>
+          <div>
+            <button id="exportLearnedBtn" class="secondary small">Exportar CSV</button>
+            <button id="clearLearnedBtn" class="secondary small" title="Apagar todas as palavras aprendidas">Zerar tudo</button>
+            <span id="learnedChevron" class="chevron">▼</span>
+          </div>
+        </div>
+        <div id="learnedPanel" class="collapsible collapsed">
+          <div class="learned-filters">
+            <button type="button" class="filter-lang active" data-lang="all">🌐 Todos</button>
+            <button type="button" class="filter-lang" data-lang="en">🇬🇧 Inglês</button>
+            <button type="button" class="filter-lang" data-lang="fr">🇫🇷 Francês</button>
+            <button type="button" class="filter-lang" data-lang="it">🇮🇹 Italiano</button>
+          </div>
+          <ul id="learnedList"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card--ranking">
+      <div class="card-header clickable" id="rankingHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="rankingPanel">
+        <h2>Ranking de palavras</h2>
+        <span id="rankingChevron" class="chevron">▼</span>
+      </div>
+      <div id="rankingPanel" class="collapsible collapsed">
+        <p class="ranking-hint">Frequência global de todas as traduções, atualizado a cada nova tradução.</p>
+        <div class="learned-filters ranking-filters">
+          <button type="button" class="filter-lang ranking-filter active" data-lang="all">Todos</button>
+          <button type="button" class="filter-lang ranking-filter" data-lang="en">Inglês</button>
+          <button type="button" class="filter-lang ranking-filter" data-lang="fr">Francês</button>
+          <button type="button" class="filter-lang ranking-filter" data-lang="it">Italiano</button>
+        </div>
+        <ul id="rankingList"></ul>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

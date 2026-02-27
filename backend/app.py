@@ -1,19 +1,37 @@
 import os
 import re
 import hashlib
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from PIL import Image
 import pytesseract
+from dotenv import load_dotenv
 from openai import OpenAI
+
+# ---------------------------
+# Configuração básica
+# ---------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(BASE_DIR)
+FRONTEND_DIR = os.path.join(PROJECT_DIR, "frontend")
+ENV_PATH = os.path.join(PROJECT_DIR, ".env")
+
+if os.path.exists(ENV_PATH):
+    load_dotenv(ENV_PATH)
 
 app = Flask(__name__)
 CORS(app)
 
-# 👉 Ajuste se necessário (Windows)
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# Caminho do Tesseract via .env (com fallback)
+tesseract_path = os.getenv("TESSERACT_PATH")
+if tesseract_path and os.path.exists(tesseract_path):
+    pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
+    raise RuntimeError("OPENAI_API_KEY não definido no .env ou ambiente")
+
+client = OpenAI(api_key=openai_api_key)
 
 # ---------------------------
 # Stopwords (EN / FR / IT)
@@ -37,6 +55,8 @@ che è una uno un una di del della dei delle nel nella nei nelle al allo alla ag
 # ---------------------------
 TEXT_CACHE = {}
 WORD_CACHE = {}
+# Cache para tradução com aprendidas preservadas (texto com placeholders)
+TRANSLATE_WITH_LEARNED_CACHE = {}
 
 def normalize_word(word: str) -> str:
     return word.strip().lower()
@@ -101,6 +121,61 @@ def translate_word_cached(word: str):
     WORD_CACHE[word] = translated
     return translated
 
+
+def translate_keeping_learned(text: str, learned_words: list):
+    """Traduz o texto para PT-BR mantendo palavras aprendidas no idioma original.
+    Substitui cada palavra aprendida por um placeholder, traduz, depois recoloca as palavras.
+    """
+    key = text_cache_key(text, learned_words)
+    if key in TRANSLATE_WITH_LEARNED_CACHE:
+        return TRANSLATE_WITH_LEARNED_CACHE[key]
+
+    learned_set = set(learned_words)
+    if not learned_set:
+        try:
+            out = translate_text_cached(text, [])
+        except Exception as e:
+            print("🔥 ERRO translate_keeping_learned:", e)
+            out = text
+        TRANSLATE_WITH_LEARNED_CACHE[key] = out
+        return out
+
+    # Palavras são sequências de letras (incl. acentos) e apóstrofo
+    pattern = re.compile(r"\b([\wÀ-ÿ']+)\b")
+    learned_order = []
+
+    def replace_with_placeholder(m):
+        w = m.group(1)
+        if normalize_word(w) in learned_set:
+            idx = len(learned_order)
+            learned_order.append(w)
+            return f"__K{idx}__"
+        return w
+
+    text_with_placeholders = pattern.sub(replace_with_placeholder, text)
+    placeholders_str = ", ".join(f"__K{i}__" for i in range(len(learned_order)))
+
+    prompt = f"""Traduza o texto abaixo para português do Brasil.
+Regras:
+- Mantenha os tokens {placeholders_str} exatamente como estão; NÃO os traduza nem altere.
+- Retorne apenas o texto traduzido.
+
+Texto:
+{text_with_placeholders}
+"""
+    try:
+        translated = call_openai(prompt, max_tokens=2000, temperature=0.0)
+    except Exception as e:
+        print("🔥 ERRO OPENAI (tradução com aprendidas):", e)
+        translated = text_with_placeholders
+
+    for i, orig in enumerate(learned_order):
+        translated = translated.replace(f"__K{i}__", orig)
+
+    TRANSLATE_WITH_LEARNED_CACHE[key] = translated
+    return translated
+
+
 # ---------------------------
 # Frequências
 # ---------------------------
@@ -128,26 +203,81 @@ def build_frequencies_with_translation(text: str):
 @app.route("/translate", methods=["POST"])
 def translate():
     data = request.json or {}
-    text = data.get("text", "")
+    text = data.get("text", "") or ""
     learned_words = [normalize_word(w) for w in data.get("learnedWords", [])]
+    with_learned_version = data.get("withLearnedVersion", False)
 
-    translated_text = translate_text_cached(text, learned_words)
-    frequencies = build_frequencies_with_translation(text)
+    # Limite simples de tamanho para evitar custos/exceções absurdos
+    if len(text) > 20_000:
+        return jsonify({"error": "Texto muito longo. Limite de ~20.000 caracteres."}), 400
 
-    return jsonify({
+    try:
+        translated_text = translate_text_cached(text, learned_words)
+        frequencies = build_frequencies_with_translation(text)
+    except Exception as e:
+        print("🔥 ERRO /translate:", e)
+        return jsonify({"error": "Erro ao traduzir o texto."}), 500
+
+    payload = {
         "translated": translated_text,
-        "frequencies": frequencies
-    })
+        "frequencies": frequencies,
+    }
+
+    if with_learned_version:
+        try:
+            translated_with_learned = translate_keeping_learned(text, learned_words)
+            payload["translatedWithLearned"] = translated_with_learned
+        except Exception as e:
+            print("🔥 ERRO /translate (withLearnedVersion):", e)
+            payload["translatedWithLearned"] = translated_text
+
+    return jsonify(payload)
+
+
+@app.route("/word", methods=["POST"])
+def translate_word():
+    data = request.json or {}
+    word = (data.get("word") or "").strip()
+    if not word:
+        return jsonify({"error": "Nenhuma palavra enviada."}), 400
+
+    try:
+        translated = translate_word_cached(word)
+    except Exception as e:
+        print("🔥 ERRO /word:", e)
+        return jsonify({"error": "Erro ao traduzir a palavra."}), 500
+
+    return jsonify({"translation": translated})
 
 @app.route("/ocr", methods=["POST"])
 def ocr():
     if "image" not in request.files:
         return jsonify({"error": "Nenhuma imagem enviada"}), 400
 
-    image = Image.open(request.files["image"])
-    text = pytesseract.image_to_string(image, lang="ita+fra+eng+por")
-    return jsonify({ "text": text })
+    try:
+        image = Image.open(request.files["image"])
+        text = pytesseract.image_to_string(image, lang="ita+fra+eng+por")
+    except Exception as e:
+        print("🔥 ERRO /ocr:", e)
+        return jsonify({"error": "Erro ao processar imagem com OCR."}), 500
+
+    return jsonify({"text": text})
+
+
+@app.route("/")
+def index():
+    """Serve o frontend em produção."""
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+
+@app.route("/<path:path>")
+def frontend_static(path):
+    """Serve app.js, style.css, etc."""
+    if os.path.exists(os.path.join(FRONTEND_DIR, path)):
+        return send_from_directory(FRONTEND_DIR, path)
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
-    
+    debug = os.getenv("FLASK_DEBUG", "0") == "1"
+    app.run(debug=debug)

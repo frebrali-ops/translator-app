@@ -1,0 +1,7 @@
+flask
+flask-cors
+pillow
+pytesseract
+python-dotenv
+openai
+gunicorn
