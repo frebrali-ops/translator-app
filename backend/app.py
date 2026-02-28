@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import hashlib
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -66,22 +67,32 @@ def text_cache_key(text: str, learned_words):
     return hashlib.sha256(base.encode("utf-8")).hexdigest()
 
 # ---------------------------
-# OpenAI helpers
+# OpenAI helpers (com retry em erros de ligação)
 # ---------------------------
 def call_openai(prompt, max_tokens=1200, temperature=0.0):
-    response = client.responses.create(
-        model="gpt-4o-mini",
-        input=prompt,
-        max_output_tokens=max_tokens,
-        temperature=temperature
-    )
-
-    out = ""
-    for item in response.output:
-        for c in item.content:
-            if c.type == "output_text":
-                out += c.text
-    return out.strip()
+    last_error = None
+    for attempt in range(3):
+        try:
+            response = client.responses.create(
+                model="gpt-4o-mini",
+                input=prompt,
+                max_output_tokens=max_tokens,
+                temperature=temperature,
+                timeout=60.0,
+            )
+            out = ""
+            for item in response.output:
+                for c in item.content:
+                    if c.type == "output_text":
+                        out += c.text
+            return out.strip()
+        except Exception as e:
+            last_error = e
+            is_connection_error = "connection" in str(e).lower() or "timeout" in str(e).lower()
+            if is_connection_error and attempt < 2:
+                time.sleep(1 + attempt)
+                continue
+            raise last_error
 
 def translate_text_cached(text: str, learned_words):
     key = text_cache_key(text, learned_words)
@@ -102,7 +113,7 @@ Texto:
         translated = call_openai(prompt, max_tokens=2000, temperature=0.0)
     except Exception as e:
         print("🔥 ERRO OPENAI (texto):", e)
-        translated = text
+        raise
 
     TEXT_CACHE[key] = translated
     return translated
@@ -116,7 +127,7 @@ def translate_word_cached(word: str):
         translated = call_openai(prompt, max_tokens=32, temperature=0.0)
     except Exception as e:
         print("🔥 ERRO OPENAI (palavra):", e)
-        translated = ""
+        raise
 
     WORD_CACHE[word] = translated
     return translated

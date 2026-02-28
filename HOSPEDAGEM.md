@@ -10,24 +10,37 @@ O projeto já está preparado para um único deploy: o Flask serve o frontend e 
 
 2. **Repositório**: suba o projeto no GitHub (se ainda não estiver).
 
-3. **New → Web Service**: conecte o repositório.
+3. **Conectar o repositório**:
+   - No dashboard do Render, clica em **"New +"** (canto superior direito).
+   - Escolhe **"Web Service"**.
+   - Se for a primeira vez: **"Connect account"** em GitHub e autoriza o Render a ver os teus repositórios.
+   - Na lista, seleciona o repositório **translator-app** (ou o nome que deste no GitHub).
+   - Clica em **"Connect"**.
 
-4. **Configuração**:
-   - **Build Command**: `pip install -r requirements.txt`  
-     (ou, se tiver na raiz: `pip install -r backend/requirements.txt` — ajuste o caminho se a estrutura for outra)
+4. **Configuração do Web Service** (na página que abriu depois do Connect):
+
+   - **Name**: pode deixar `translator-app` ou mudar (ex.: `tradutor-educacional`).
+   - **Region**: escolhe o mais próximo (ex.: Frankfurt).
+   - **Branch**: `main`.
+   - **Root Directory**: deixe **em branco** (o projeto está na raiz do repo).
+   - **Runtime**: **Python 3**.
+   - **Build Command**:  
+     `pip install -r requirements.txt`
    - **Start Command**:  
-     `cd backend && python app.py`  
-     Ou, se o Render usar a raiz como working dir:  
-     `gunicorn backend.app:app` (veja passo 5)
-   - **Root Directory**: deixe em branco ou aponte para a pasta do projeto se necessário.
+     `gunicorn backend.app:app`
 
-5. **Servir com Gunicorn** (produção):  
-   Adicione ao `requirements.txt` (na pasta onde está o `app.py`):  
-   `gunicorn`  
-   Start Command: `gunicorn backend.app:app` (ou `gunicorn app:app` se estiver dentro de `backend/`).
+   Depois clica em **"Advanced"** (ou desliza para baixo) e vai ao passo 5.
 
-6. **Variáveis de ambiente** (Settings → Environment):
-   - `OPENAI_API_KEY` = sua chave da OpenAI (obrigatório).
+5. **Variáveis de ambiente** (em **Environment** ou **Environment Variables**):
+   - Clica em **"Add Environment Variable"**.
+   - **Key**: `OPENAI_API_KEY`
+   - **Value**: cola a tua chave da OpenAI (a mesma que tens no `.env` em local).
+   - Guarda (Save).
+
+6. **Criar o serviço**:
+   - Clica em **"Create Web Service"** (ou **"Deploy"**) no fundo da página.
+   - O Render vai fazer o build e colocar o site no ar. Na primeira vez pode demorar 2–3 minutos.
+   - No fim, o link do site aparece no topo (ex.: `https://translator-app-xxxx.onrender.com`).
 
 7. **OCR (Tesseract)**: o plano grátis do Render não instala Tesseract por padrão. Opções:
    - Deixar o OCR desativado na hospedagem (tradução e resto funcionam).
