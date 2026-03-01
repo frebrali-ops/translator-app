@@ -598,6 +598,15 @@ li small {
   font-size: 0.9rem;
   color: var(--error-text);
 }
+.error-box .error-box-actions {
+  display: inline-block;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+.error-box .btn-retry {
+  margin-top: 2px;
+  white-space: nowrap;
+}
 
 /* ---------- Toggle (checkbox) ---------- */
 .toggle {

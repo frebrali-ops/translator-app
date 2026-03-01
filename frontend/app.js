@@ -197,6 +197,7 @@ const rankingList = document.getElementById("rankingList");
 const themeToggle = document.getElementById("themeToggle");
 const themeIcon = document.getElementById("themeIcon");
 const copyResultBtn = document.getElementById("copyResultBtn");
+const downloadResultBtn = document.getElementById("downloadResultBtn");
 const summaryBtn = document.getElementById("summaryBtn");
 const summaryContent = document.getElementById("summaryContent");
 
@@ -227,16 +228,35 @@ function setLoading(isLoading, context = "Pronto") {
   ocrBtn.disabled = isLoading;
 }
 
-function showError(message) {
+function showError(message, options = {}) {
   statusBadge.classList.add("error");
   statusText.textContent = "Erro";
   errorBox.style.display = "block";
-  errorBox.textContent = message || "Ocorreu um erro. Tente novamente.";
+  const msg = message || "Ocorreu um erro. Tente novamente.";
+  if (options.retry && translateBtn) {
+    errorBox.innerHTML = "";
+    errorBox.appendChild(document.createTextNode(msg));
+    const span = document.createElement("span");
+    span.className = "error-box-actions";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "secondary small btn-retry";
+    btn.textContent = "Tentar de novo";
+    btn.onclick = () => {
+      clearError();
+      translateBtn.click();
+    };
+    span.appendChild(btn);
+    errorBox.appendChild(span);
+  } else {
+    errorBox.textContent = msg;
+  }
 }
 
 function clearError() {
   errorBox.style.display = "none";
   errorBox.textContent = "";
+  errorBox.innerHTML = "";
   statusBadge.classList.remove("error");
 }
 
@@ -740,6 +760,32 @@ if (copyResultBtn) {
   });
 }
 
+/* Descarregar resultado como .txt */
+function getVisibleResultText() {
+  if (!translatedResult.classList.contains("hidden")) return translatedResult.innerText || "";
+  if (!originalResult.classList.contains("hidden")) return originalResult.innerText || "";
+  if (!translatedLearnedResult.classList.contains("hidden")) return translatedLearnedResult.innerText || "";
+  return "";
+}
+if (downloadResultBtn) {
+  downloadResultBtn.addEventListener("click", () => {
+    const text = getVisibleResultText().trim();
+    if (!text) {
+      showError("Nada para descarregar. Traduza um texto primeiro.");
+      return;
+    }
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "traducao.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+    statusText.textContent = "Ficheiro descarregado.";
+    setTimeout(() => { if (statusText) statusText.textContent = "Pronto"; }, 2000);
+  });
+}
+
 /* Resumo do texto traduzido (apenas ao clicar) – delegação para garantir que o clique seja sempre tratado */
 document.addEventListener("click", async (e) => {
   const btn = e.target && e.target.id === "summaryBtn" ? e.target : (e.target && e.target.closest && e.target.closest("#summaryBtn"));
@@ -813,7 +859,7 @@ translateBtn.addEventListener("click", async (e) => {
     const data = await res.json();
 
     if (!res.ok) {
-      showError(data.error || "Erro ao traduzir o texto.");
+      showError(data.error || "Erro ao traduzir o texto.", { retry: true });
       translatedResult.textContent = "";
       setLoading(false, "Pronto");
       return;
@@ -863,7 +909,8 @@ translateBtn.addEventListener("click", async (e) => {
     showError(
       isLocal
         ? "Erro ao conectar com o backend. Inicie o servidor (na pasta backend: python app.py)."
-        : "Erro ao conectar com o backend."
+        : "Erro ao conectar com o backend.",
+      { retry: true }
     );
     translatedResult.textContent = "";
     setLoading(false, "Pronto");
