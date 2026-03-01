@@ -29,13 +29,18 @@ tesseract_path = os.getenv("TESSERACT_PATH")
 if tesseract_path and os.path.exists(tesseract_path):
     pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
-openai_api_key = os.getenv("OPENAI_API_KEY")
-if not openai_api_key:
-    raise RuntimeError("OPENAI_API_KEY não definido no .env ou ambiente")
+openai_api_key = (os.getenv("OPENAI_API_KEY") or "").strip()
 
-# Timeout longo de conexão (60s) para ambientes cloud (Railway, Render), onde a primeira ligação pode demorar
+# Cliente OpenAI só é criado se a chave existir; assim a app arranca mesmo sem chave (ex.: Railway)
 _openai_timeout = httpx.Timeout(120.0, connect=60.0)
-client = OpenAI(api_key=openai_api_key, timeout=_openai_timeout)
+client = OpenAI(api_key=openai_api_key or "sk-dummy", timeout=_openai_timeout) if openai_api_key else None
+
+def _require_openai():
+    """Levanta erro claro se OPENAI_API_KEY não estiver configurada."""
+    if not openai_api_key:
+        raise RuntimeError(
+            "OPENAI_API_KEY não configurada. No Railway: Variables → adicione OPENAI_API_KEY → Redeploy."
+        )
 
 # ---------------------------
 # Stopwords (EN / FR / IT)
@@ -74,6 +79,7 @@ def text_cache_key(text: str, learned_words):
 # OpenAI helpers (com retry em erros de ligação / cold start no Render)
 # ---------------------------
 def call_openai(prompt, max_tokens=1200, temperature=0.0):
+    _require_openai()
     last_error = None
     # Timeout maior (120s) e mais retries para Render (cold start e rede lenta)
     for attempt in range(4):
@@ -235,6 +241,8 @@ def translate():
     except Exception as e:
         print("🔥 ERRO /translate:", e)
         err_str = str(e).lower()
+        if "openai_api_key" in err_str or "não configurada" in err_str:
+            return jsonify({"error": str(e)}), 503
         if "connection" in err_str or "timeout" in err_str or "connect" in err_str:
             return jsonify({
                 "error": "A ligação ao serviço de tradução falhou. Tente novamente em instantes."
@@ -291,6 +299,9 @@ def summary():
         summary_text = summarize_text_cached(text)
     except Exception as e:
         print("🔥 ERRO /summary:", e)
+        err_str = str(e).lower()
+        if "openai_api_key" in err_str or "não configurada" in err_str:
+            return jsonify({"error": str(e)}), 503
         return jsonify({"error": "Erro ao gerar resumo."}), 500
     return jsonify({"summary": summary_text})
 
@@ -306,6 +317,9 @@ def translate_word():
         translated = translate_word_cached(word)
     except Exception as e:
         print("🔥 ERRO /word:", e)
+        err_str = str(e).lower()
+        if "openai_api_key" in err_str or "não configurada" in err_str:
+            return jsonify({"error": str(e)}), 503
         return jsonify({"error": "Erro ao traduzir a palavra."}), 500
 
     return jsonify({"translation": translated})
