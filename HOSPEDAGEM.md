@@ -33,6 +33,11 @@ O Railway costuma detectar a app e a porta corretamente. O projeto já inclui `n
    - Se alteraste algo, podes clicar em **"Redeploy"** no separador **Deployments**.
    - Abre o URL gerado no browser; a página do tradutor deve carregar.
 
+**Se o deploy aparecer "CRASHED":**
+- Clica no deploy que falhou → **View Logs** (ou **Logs**) e lê a última mensagem de erro.
+- **"OPENAI_API_KEY não definido"** → no separador **Variables**, adiciona `OPENAI_API_KEY` com o valor da tua chave e faz **Redeploy**.
+- **"ModuleNotFoundError"** ou **"gunicorn: command not found"** → em **Settings** → **Deploy** (ou **Build & Deploy**), define **Start Command**: `gunicorn --bind 0.0.0.0:$PORT backend.app:app` e guarda; depois **Redeploy**.
+
 **Nota**: O plano gratuito dá créditos mensais; quando acabam, a app fica pausada até ao mês seguinte. Para uso moderado costuma chegar.
 
 ---

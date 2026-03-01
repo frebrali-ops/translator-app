@@ -8,6 +8,7 @@ from PIL import Image
 import pytesseract
 from dotenv import load_dotenv
 from openai import OpenAI
+import httpx
 
 # ---------------------------
 # Configuração básica
@@ -32,7 +33,9 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
     raise RuntimeError("OPENAI_API_KEY não definido no .env ou ambiente")
 
-client = OpenAI(api_key=openai_api_key)
+# Timeout longo de conexão (60s) para ambientes cloud (Railway, Render), onde a primeira ligação pode demorar
+_openai_timeout = httpx.Timeout(120.0, connect=60.0)
+client = OpenAI(api_key=openai_api_key, timeout=_openai_timeout)
 
 # ---------------------------
 # Stopwords (EN / FR / IT)
@@ -231,6 +234,11 @@ def translate():
         frequencies = build_frequencies_with_translation(text)
     except Exception as e:
         print("🔥 ERRO /translate:", e)
+        err_str = str(e).lower()
+        if "connection" in err_str or "timeout" in err_str or "connect" in err_str:
+            return jsonify({
+                "error": "A ligação ao serviço de tradução falhou. Tente novamente em instantes."
+            }), 503
         return jsonify({"error": "Erro ao traduzir o texto."}), 500
 
     payload = {
