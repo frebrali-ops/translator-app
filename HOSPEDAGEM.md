@@ -4,7 +4,40 @@ O projeto já está preparado para um único deploy: o Flask serve o frontend e 
 
 ---
 
-## 1. Render.com (recomendado)
+## 1. Railway.app (recomendado – costuma carregar à primeira)
+
+O Railway costuma detectar a app e a porta corretamente. O projeto já inclui `nixpacks.toml` para o arranque.
+
+1. **Conta**: cria em [railway.app](https://railway.app) (há plano gratuito com créditos mensais).
+
+2. **Novo projeto**:
+   - Clica em **"New Project"**.
+   - Escolhe **"Deploy from GitHub repo"**.
+   - Se for a primeira vez, liga a conta ao GitHub e autoriza o acesso.
+   - Seleciona o repositório **translator-app** (ou o nome que tens no GitHub).
+
+3. **Variável de ambiente**:
+   - No projeto, clica no teu **service** (o retângulo da app).
+   - Abre o separador **"Variables"** (ou **"Settings"** → **Variables**).
+   - Clica em **"Add Variable"** ou **"New Variable"**.
+   - **Nome**: `OPENAI_API_KEY`  
+   - **Valor**: cola a tua chave da OpenAI (a mesma do `.env` em local).
+   - Guarda.
+
+4. **Domínio público**:
+   - Em **"Settings"** (ou no separador **"Networking"**), procura **"Public Networking"** ou **"Generate Domain"**.
+   - Clica em **"Generate Domain"** para obter um URL tipo `https://translator-app-production-xxxx.up.railway.app`.
+
+5. **Deploy**:
+   - O Railway faz o build e o deploy automaticamente ao conectar o repo.
+   - Se alteraste algo, podes clicar em **"Redeploy"** no separador **Deployments**.
+   - Abre o URL gerado no browser; a página do tradutor deve carregar.
+
+**Nota**: O plano gratuito dá créditos mensais; quando acabam, a app fica pausada até ao mês seguinte. Para uso moderado costuma chegar.
+
+---
+
+## 2. Render.com
 
 1. **Conta**: crie em [render.com](https://render.com) (grátis).
 
@@ -50,16 +83,6 @@ Depois do deploy, o link será algo como: `https://teu-servico.onrender.com`.
 
 ---
 
-## 2. Railway.app
-
-1. Conta em [railway.app](https://railway.app).
-2. **New Project → Deploy from GitHub** e escolha o repositório.
-3. **Variables**: adicione `OPENAI_API_KEY`.
-4. Railway detecta Python; se não definir comando, use **Start Command**: `cd backend && gunicorn app:app` (e ponha `gunicorn` no `requirements.txt` do backend).
-5. O frontend é servido pelo Flask na rota `/` (já configurado no `app.py`).
-
----
-
 ## 3. PythonAnywhere
 
 1. Conta grátis em [pythonanywhere.com](https://www.pythonanywhere.com).
@@ -73,7 +96,7 @@ Depois do deploy, o link será algo como: `https://teu-servico.onrender.com`.
 
 ---
 
-## 4. Importante antes de publicar
+## 4. Importante antes de publicar (qualquer serviço)
 
 - **OPENAI_API_KEY**: nunca a coloques no código; usa sempre variáveis de ambiente no painel do serviço.
 - **Custo da API**: a OpenAI cobra por uso; com uso moderado, o custo costuma ser baixo, mas acompanha no dashboard da OpenAI.
@@ -81,7 +104,7 @@ Depois do deploy, o link será algo como: `https://teu-servico.onrender.com`.
 
 ---
 
-## 5. Testar em local como em produção
+## 5. Testar em local (como em produção)
 
 Na pasta do projeto (raiz):
 
@@ -100,11 +123,11 @@ Abre no browser `http://127.0.0.1:8000`. O frontend e a API devem responder como
 
 | Serviço          | Grátis | Fácil | OCR (Tesseract)   |
 |------------------|--------|--------|-------------------|
+| **Railway**      | Créditos/mês | Sim | Possível com Docker |
 | Render           | Sim*   | Sim    | Só com Docker     |
-| Railway          | Créditos | Sim  | Possível com Docker |
 | PythonAnywhere   | Sim    | Sim    | Pode não haver    |
 
-\* Render “adormece” o app após inatividade; o primeiro acesso pode demorar alguns segundos.
+\* Render “adormece” o app após inatividade; o primeiro acesso pode demorar. Se a página não carregar, vê a secção 6 (resolução de problemas).
 
 ---
 
