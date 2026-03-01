@@ -224,6 +224,11 @@ a:focus-visible {
   background: #22202c;
   --card-bg-item: #0f0e14;
 }
+[data-theme="dark"] .card--summary,
+:root .card--summary {
+  background: #252330;
+  --card-bg-item: #0f0e14;
+}
 
 /* Blocos – tons azulados suaves (tema claro) */
 [data-theme="light"] .card--main {
@@ -255,6 +260,28 @@ a:focus-visible {
   background: #f0f4ff;
   --card-bg-item: #eff6ff;
   border-color: rgba(59, 130, 246, 0.15);
+}
+[data-theme="light"] .card--summary {
+  background: #f6f9ff;
+  --card-bg-item: #eff6ff;
+  border-color: rgba(59, 130, 246, 0.12);
+}
+
+.summary-content {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--card-bg-item);
+  min-height: 60px;
+  line-height: 1.5;
+}
+.summary-content .summary-placeholder {
+  margin: 0;
+  color: var(--muted);
+  font-style: normal;
+}
+.summary-content .summary-placeholder em {
+  font-style: italic;
 }
 
 @media (min-width: 600px) {

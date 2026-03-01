@@ -56,6 +56,7 @@ che è una uno un una di del della dei delle nel nella nei nelle al allo alla ag
 # ---------------------------
 TEXT_CACHE = {}
 WORD_CACHE = {}
+SUMMARY_CACHE = {}
 # Cache para tradução com aprendidas preservadas (texto com placeholders)
 TRANSLATE_WITH_LEARNED_CACHE = {}
 
@@ -245,6 +246,44 @@ def translate():
     return jsonify(payload)
 
 
+def summarize_text_cached(text: str) -> str:
+    """Gera um resumo conciso do texto em português."""
+    if len(text.strip()) < 50:
+        return text.strip()
+    key = hashlib.sha256(("summary:" + text).encode("utf-8")).hexdigest()
+    if key in SUMMARY_CACHE:
+        return SUMMARY_CACHE[key]
+    prompt = f"""Resuma o texto abaixo em português do Brasil de forma clara e concisa (alguns parágrafos curtos).
+Não invente informações; mantenha apenas o que está no texto.
+
+Texto:
+{text}
+"""
+    try:
+        summary = call_openai(prompt, max_tokens=800, temperature=0.2)
+    except Exception as e:
+        print("🔥 ERRO OPENAI (resumo):", e)
+        raise
+    SUMMARY_CACHE[key] = summary
+    return summary
+
+
+@app.route("/summary", methods=["POST"])
+def summary():
+    data = request.json or {}
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "Nenhum texto enviado."}), 400
+    if len(text) > 20_000:
+        return jsonify({"error": "Texto muito longo para resumir."}), 400
+    try:
+        summary_text = summarize_text_cached(text)
+    except Exception as e:
+        print("🔥 ERRO /summary:", e)
+        return jsonify({"error": "Erro ao gerar resumo."}), 500
+    return jsonify({"summary": summary_text})
+
+
 @app.route("/word", methods=["POST"])
 def translate_word():
     data = request.json or {}
@@ -281,9 +320,9 @@ def index():
     return send_from_directory(FRONTEND_DIR, "index.html")
 
 
-@app.route("/<path:path>")
+@app.route("/<path:path>", methods=["GET", "HEAD"])
 def frontend_static(path):
-    """Serve app.js, style.css, etc."""
+    """Serve app.js, style.css, etc. Apenas GET/HEAD para não capturar POST da API."""
     if os.path.exists(os.path.join(FRONTEND_DIR, path)):
         return send_from_directory(FRONTEND_DIR, path)
     return send_from_directory(FRONTEND_DIR, "index.html")

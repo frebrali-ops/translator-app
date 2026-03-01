@@ -197,6 +197,8 @@ const rankingList = document.getElementById("rankingList");
 const themeToggle = document.getElementById("themeToggle");
 const themeIcon = document.getElementById("themeIcon");
 const copyResultBtn = document.getElementById("copyResultBtn");
+const summaryBtn = document.getElementById("summaryBtn");
+const summaryContent = document.getElementById("summaryContent");
 
 let lastFrequencies = [];
 let currentRankingLang = "all";
@@ -270,6 +272,40 @@ function setResultTab(which) {
   if (tabTranslated) tabTranslated.setAttribute("aria-selected", isTranslated);
   if (tabOriginal) tabOriginal.setAttribute("aria-selected", isOriginal);
   if (tabTranslatedLearned) tabTranslatedLearned.setAttribute("aria-selected", isTranslatedLearned);
+
+  const visiblePanel = isTranslated
+    ? translatedResult
+    : isOriginal
+      ? originalResult
+      : translatedLearnedResult;
+  if (visiblePanel) visiblePanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+/** Atualiza a aba "Tradução com aprendidas" com a lista atual de palavras aprendidas (sem nova tradução). */
+async function refreshTranslatedWithLearned() {
+  if (!lastSourceText || !translatedLearnedResult) return;
+  try {
+    const res = await fetch(`${API_BASE}/translate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: lastSourceText,
+        learnedWords: getLearnedWords(),
+        withLearnedVersion: true,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) return;
+    const mixed =
+      data.translatedWithLearned != null
+        ? data.translatedWithLearned
+        : data.translated || lastTranslatedText;
+    lastTranslatedWithLearned = mixed;
+    translatedLearnedResult.innerHTML = highlightLearnedWords(mixed);
+    attachLearnedWordHandlers();
+  } catch (e) {
+    console.error("Erro ao atualizar tradução com aprendidas:", e);
+  }
 }
 
 function findWordTranslationInFrequencies(word) {
@@ -504,19 +540,15 @@ function renderFrequencies(freqs, learnedWords) {
     } else {
       const btn = document.createElement("button");
       btn.textContent = "✔ Aprendi";
-      btn.onclick = () => {
+      btn.onclick = async () => {
         saveLearnedWord(item.word, currentSourceLang);
         li.style.opacity = "0.6";
         btn.remove();
         li.textContent += " ✔ aprendida";
-        // Recalcula o destaque no texto ORIGINAL e no TRADUZIDO com aprendidas
         originalResult.innerHTML = highlightLearnedWords(lastSourceText);
-        const mixed =
-          lastTranslatedWithLearned || lastTranslatedText;
-        translatedLearnedResult.innerHTML = highlightLearnedWords(mixed);
-        attachLearnedWordHandlers();
         renderLearnedWordsPanel();
         renderFrequencies(lastFrequencies, getLearnedWords());
+        await refreshTranslatedWithLearned();
       };
       li.appendChild(btn);
     }
@@ -534,11 +566,18 @@ attachLearnedWordHandlers();
 if (clearBtn) {
   clearBtn.addEventListener("click", () => {
     inputText.value = "";
+    lastSourceText = "";
+    lastTranslatedText = "";
     lastTranslatedWithLearned = "";
+    lastFrequencies = [];
     translatedResult.innerHTML = "";
     originalResult.innerHTML = "";
     translatedLearnedResult.innerHTML = "";
     list.innerHTML = "";
+    const summaryContentEl = document.getElementById("summaryContent");
+    if (summaryContentEl) {
+      summaryContentEl.innerHTML = "<p class=\"summary-placeholder\">Traduza um texto e clique em <em>Fazer resumo</em> para gerar um resumo.</p>";
+    }
     clearError();
     updateCharCount();
     setLoading(false, "Pronto");
@@ -640,12 +679,18 @@ document.querySelectorAll(".ranking-filter").forEach((btn) => {
   });
 });
 
-if (tabTranslated && tabOriginal && tabTranslatedLearned) {
-  tabTranslated.addEventListener("click", () => setResultTab("translated"));
-  tabOriginal.addEventListener("click", () => setResultTab("original"));
-  tabTranslatedLearned.addEventListener("click", () =>
-    setResultTab("translatedLearned")
-  );
+const resultTablist = document.querySelector(
+  '.result-tabs[role="tablist"]'
+);
+if (resultTablist) {
+  resultTablist.addEventListener("click", (e) => {
+    const tab = e.target.closest('[role="tab"]');
+    if (!tab) return;
+    e.preventDefault();
+    if (tab.id === "tabTranslated") setResultTab("translated");
+    else if (tab.id === "tabOriginal") setResultTab("original");
+    else if (tab.id === "tabTranslatedLearned") setResultTab("translatedLearned");
+  });
 }
 
 /* Tema claro/escuro */
@@ -694,6 +739,45 @@ if (copyResultBtn) {
     }).catch(() => showError("Não foi possível copiar."));
   });
 }
+
+/* Resumo do texto traduzido (apenas ao clicar) – delegação para garantir que o clique seja sempre tratado */
+document.addEventListener("click", async (e) => {
+  const btn = e.target && e.target.id === "summaryBtn" ? e.target : (e.target && e.target.closest && e.target.closest("#summaryBtn"));
+  if (!btn) return;
+  e.preventDefault();
+  const contentEl = document.getElementById("summaryContent");
+  if (!contentEl) return;
+
+  const text = (lastTranslatedText || "").trim();
+  if (!text) {
+    showError("Traduza um texto primeiro para poder gerar o resumo.");
+    return;
+  }
+
+  contentEl.innerHTML = "<p class=\"summary-placeholder\">A gerar resumo…</p>";
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/summary`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showError(data.error || "Erro ao gerar resumo.");
+      contentEl.innerHTML = "<p class=\"summary-placeholder\">Traduza um texto e clique em <em>Fazer resumo</em> para gerar um resumo.</p>";
+      return;
+    }
+    const summary = (data.summary || "").trim();
+    contentEl.innerHTML = summary ? `<p>${summary.replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>")}</p>` : "<p class=\"summary-placeholder\">Nenhum resumo devolvido.</p>";
+  } catch (err) {
+    console.error("Resumo:", err);
+    showError("Erro ao conectar com o servidor para gerar resumo.");
+    contentEl.innerHTML = "<p class=\"summary-placeholder\">Traduza um texto e clique em <em>Fazer resumo</em> para gerar um resumo.</p>";
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 /* Traduzir */
 translateBtn.addEventListener("click", async (e) => {
