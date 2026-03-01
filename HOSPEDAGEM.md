@@ -26,8 +26,8 @@ O projeto já está preparado para um único deploy: o Flask serve o frontend e 
    - **Runtime**: **Python 3**.
    - **Build Command**:  
      `pip install -r requirements.txt`
-   - **Start Command**:  
-     `gunicorn backend.app:app`
+   - **Start Command** (obrigatório usar `0.0.0.0` e `$PORT` para o Render detectar a porta):  
+     `gunicorn --bind 0.0.0.0:$PORT backend.app:app`
 
    Depois clica em **"Advanced"** (ou desliza para baixo) e vai ao passo 5.
 
@@ -115,10 +115,15 @@ Abre no browser `http://127.0.0.1:8000`. O frontend e a API devem responder como
 1. **Variável OPENAI_API_KEY**  
    No Render: **Dashboard** → teu Web Service → **Environment**. Confirma que existe a variável `OPENAI_API_KEY` com o valor da tua chave da OpenAI (igual à do `.env` em local). Sem espaços à frente ou atrás. Depois de alterar, faz **Manual Deploy** para aplicar.
 
-2. **Primeiro pedido após inatividade**  
+2. **"No open HTTP ports detected" / página em branco**  
+   O Start Command tem de usar a porta do Render:  
+   `gunicorn --bind 0.0.0.0:$PORT backend.app:app`  
+   No Dashboard do Render: **Settings** → **Start Command** → cola este comando → **Save** e faz **Manual Deploy**.
+
+3. **Primeiro pedido após inatividade**  
    No plano grátis o serviço “adormece”. O primeiro pedido (tradução) pode falhar com connection/timeout; **tenta de novo uma ou duas vezes** — o backend faz várias tentativas automáticas e o serviço pode precisar de alguns segundos para acordar.
 
-3. **Chave inválida ou revogada**  
+4. **Chave inválida ou revogada**  
    No [dashboard da OpenAI](https://platform.openai.com/api-keys) confirma que a chave está ativa e com créditos. Se criaste uma chave nova, atualiza o valor em **Environment** no Render e faz redeploy.
 
 Para “qualquer pessoa aceder de forma gratuita”, o mais direto é: **subir o repositório no GitHub** e fazer deploy no **Render** ou **Railway** com `OPENAI_API_KEY` nas variáveis de ambiente. O site ficará com um URL público (ex.: `https://teu-app.onrender.com`).

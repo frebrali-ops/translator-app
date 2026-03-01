@@ -1,0 +1,10 @@
+# Configuração para deploy no Render (opcional; podes usar o Dashboard em vez disto)
+services:
+  - type: web
+    name: translator-app
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT backend.app:app
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
