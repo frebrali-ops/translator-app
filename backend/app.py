@@ -68,18 +68,19 @@ def text_cache_key(text: str, learned_words):
     return hashlib.sha256(base.encode("utf-8")).hexdigest()
 
 # ---------------------------
-# OpenAI helpers (com retry em erros de ligação)
+# OpenAI helpers (com retry em erros de ligação / cold start no Render)
 # ---------------------------
 def call_openai(prompt, max_tokens=1200, temperature=0.0):
     last_error = None
-    for attempt in range(3):
+    # Timeout maior (120s) e mais retries para Render (cold start e rede lenta)
+    for attempt in range(4):
         try:
             response = client.responses.create(
                 model="gpt-4o-mini",
                 input=prompt,
                 max_output_tokens=max_tokens,
                 temperature=temperature,
-                timeout=60.0,
+                timeout=120.0,
             )
             out = ""
             for item in response.output:
@@ -89,9 +90,11 @@ def call_openai(prompt, max_tokens=1200, temperature=0.0):
             return out.strip()
         except Exception as e:
             last_error = e
-            is_connection_error = "connection" in str(e).lower() or "timeout" in str(e).lower()
-            if is_connection_error and attempt < 2:
-                time.sleep(1 + attempt)
+            err_str = str(e).lower()
+            is_connection_error = "connection" in err_str or "timeout" in err_str or "connect" in err_str
+            if is_connection_error and attempt < 3:
+                wait = 3 + attempt * 3  # 3, 6, 9 segundos
+                time.sleep(wait)
                 continue
             raise last_error
 
